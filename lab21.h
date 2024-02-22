@@ -13,6 +13,7 @@ class Equipment{
 	int def;
 	public:
 		Equipment(int,int,int);
+		friend class Unit;
 		vector<int> getStat();			
 };
 
@@ -40,6 +41,20 @@ class Unit{
 		void equip(Equipment *);  
 };
 
+Equipment::Equipment(int a, int b, int c) {
+    hpmax = a;
+    atk = b;
+    def = c;
+}
+
+vector<int> Equipment::getStat() {
+    vector<int> stats;
+    stats.push_back(hpmax);
+    stats.push_back(atk);
+    stats.push_back(def);
+    return stats;
+}
+
 Unit::Unit(string t,string n){ 
 	type = t;
 	name = n;
@@ -54,7 +69,22 @@ Unit::Unit(string t,string n){
 	}
 	hp = hpmax;	
 	guard_on = false;
+	dodge_on = false;
 	equipment = NULL;
+}
+
+void Unit::equip(Equipment *w){
+    if (equipment != NULL) {
+        hpmax -= equipment->hpmax;
+        atk -= equipment->atk;
+        def -= equipment->def;
+        delete equipment;
+    }
+    equipment = new Equipment(w->hpmax, w->atk, w->def);
+    hpmax += w->hpmax;
+    atk += w->atk;
+    def += w->def;
+	hp = min(hp, hpmax);
 }
 
 void Unit::showStatus(){
@@ -74,14 +104,24 @@ void Unit::showStatus(){
 
 void Unit::newTurn(){
 	guard_on = false; 
+	dodge_on = false;
 }
 
 int Unit::beAttacked(int oppatk){
 	int dmg;
 	if(oppatk > def){
 		dmg = oppatk-def;	
-		if(guard_on) dmg = dmg/3;
-	}	
+		if(guard_on){ 
+			dmg = dmg/3;
+			}else if(dodge_on) {
+				int temp = rand()%2;
+				if (temp == 1){
+					dmg = 0;
+					}else{
+					dmg = dmg*2;
+					} 
+			}
+		}	
 	hp -= dmg;
 	if(hp <= 0){hp = 0;}
 	
@@ -92,16 +132,28 @@ int Unit::attack(Unit &opp){
 	return opp.beAttacked(atk);
 }
 
-int Unit::heal(){
-	int h = rand()%21 + 10;
-	if(hp + h > hpmax) h = hpmax - hp;
-	hp = hp + h;
-	return h;
+int Unit::ultimateAttack(Unit &opp){
+	return opp.beAttacked(2*atk);
+}
+
+int Unit::heal() {
+    int h = rand() % 21 + 10;
+    if (hp + h > hpmax) {
+        h = hpmax - hp;
+        hp = hpmax;
+    } else {
+        hp += h;
+    }
+    return h;
 }
 
 void Unit::guard(){
 	guard_on = true;
-}	
+}
+
+void Unit::dodge(){
+	dodge_on = true;
+}
 
 bool Unit::isDead(){
 	if(hp <= 0) return true;
@@ -167,4 +219,3 @@ void playerLose(){
 	cout << "*                                                     *\n";
 	cout << "*******************************************************\n";
 };
-
